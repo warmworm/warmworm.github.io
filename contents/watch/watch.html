@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<HEAD>
+	<META charset="utf-8">
+	<TITLE>시계</TITLE>
+</HEAD>
+<BODY>
+	<P>2002년에 Java Applet으로 만들었던 시계를 JavaScript로 컨버팅</P>
+	<CANVAS id="canvas" width="200" height="200" style="background:white">
+		이 브라우저는 캔버스를 지원하지 않습니다.
+	</CANVAS>
+	<SCRIPT>
+		var canvas;
+		var ctx2d;
+		var watchBackImage;
+		var watchFontImage;
+		var showColon;
+		var dateFont = {
+			pos: {x: 1, y: 110},
+			size: {w: 7, h: 13}
+		};
+		var hourMinFont = {
+			pos: {x: 1, y: 15},
+			size: {w: 18, h: 31}
+		}
+		var secondFont = {
+			pos: {x: 1, y: 70},
+			size: {w: 11, h: 19}
+		}
+		var dayFont = {
+			pos: {x: 1, y: 145},
+			size: {w: 9, h: 11}
+		}
+
+		window.onload = function() {
+			canvas = document.getElementById("canvas");
+			if (canvas == null || canvas.getContext == null) {
+				return;
+			}
+
+			showColon = true;
+			watchBackImage = new Image();
+			watchBackImage.src = "watch.gif";
+			watchFontImage = new Image();
+			watchFontImage.src = "watchfont.gif";
+
+			ctx2d = canvas.getContext("2d");
+			setInterval(drawWatch, 1000 / 4);
+		}
+
+		function drawImageCrop(ctx, img, x, y, sx, sy, sw, sh) {
+			ctx.drawImage(img, sx, sy, sw, sh, x, y, sw, sh);
+		}
+
+		function emptyNumFont(font, x) {
+			return x + (font.size.w + 1); // next x
+		}
+
+		function drawNumFont(num, font, x, y) {
+			drawImageCrop(ctx2d, watchFontImage, x, y, font.pos.x + (num * (font.size.w + 1)), font.pos.y, font.size.w, font.size.h);
+			return x + (font.size.w + 1); // next x
+		}
+
+		function drawNumber(num, digit, showzero, font, x, y) {
+			let arr = [];
+			let n = num;
+			do {
+				arr.push(n % 10);
+				n = Math.floor(n / 10);
+			} while (n > 0);
+
+			// 남은 자릿수를 0으로 채운다.
+			if (arr.length < digit) {
+				let c = digit - arr.length;
+				for (var i=0; i<c; i++) {
+					arr.push(0);
+				}
+			}
+
+			let drawX = x;
+			let leadZero = true;
+			for (var i=arr.length-1; i>=0; i--) {
+				if (arr[i] == 0 && showzero == false && leadZero == true) {
+					drawX = emptyNumFont(font, drawX);
+				}
+				else {
+					drawX = drawNumFont(arr[i], font, drawX, y);
+				}
+				if (arr[i] != 0) {
+					leadZero = false;
+				}
+			}
+
+			return drawX;
+		}
+
+		function drawWatch() {
+			let now = new Date();
+			let year = now.getFullYear();
+			let month = now.getMonth() + 1;
+			let date = now.getDate();
+			let day = now.getDay();
+			let hours = now.getHours();
+			let minutes = now.getMinutes();
+			let seconds = now.getSeconds();
+			let ampm = hours < 12 ? 0 : 1;
+
+			ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+			ctx2d.drawImage(watchBackImage, 0, 0); // watch background
+			drawImageCrop(ctx2d, watchFontImage, 38, 66, 170, 70, 117, 55); // number background
+			drawImageCrop(ctx2d, watchFontImage, 126, 71, (day*10)+1, 145, 9, 11); // day
+			drawImageCrop(ctx2d, watchFontImage, 142, 75, (ampm*12)+230, 15, 11, 7); // AM/PM
+
+			let numx = 42;
+			let numy = 69;
+			numx = drawNumber(year, 4, false, dateFont, numx, numy); // year
+			numx = drawNumFont(10, dateFont, numx, numy); // dash
+			numx = drawNumber(month, 2, false, dateFont, numx, numy); // month
+			numx = drawNumFont(10, dateFont, numx, numy); // dash
+			numx = drawNumber(date, 2, false, dateFont, numx, numy); // date
+
+			numx = 29;
+			numy = 89;
+			numx = drawNumber(hours, 2, false, hourMinFont, numx, numy); // hour
+			numx = (showColon == true)
+				? drawNumFont(10, hourMinFont, numx, numy) // colon
+				: emptyNumFont(hourMinFont, numx);
+			showColon = !showColon;
+			numx = drawNumber(minutes, 2, true, hourMinFont, numx, numy); // minute
+
+			numx = 128;
+			numy = 101;
+			numx = drawNumber(seconds, 2, true, secondFont, numx, numy); // second
+		}	
+	</SCRIPT>
+</BODY>
